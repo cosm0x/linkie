@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import resolveUser from "@/helpers/resolveUser";
-import prisma from "../../../../../prisma";
+import prisma from "../../../../../../prisma";
 
 //@ts-ignore
 function sumPayments(listings) {
