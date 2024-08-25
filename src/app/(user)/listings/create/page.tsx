@@ -9,7 +9,7 @@ import { Plus, Minus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
-import easypay from "@/constants/easypay";
+import easypay from "@/constants/linkie";
 import { parseEther, stringToHex } from "viem";
 import { createListing } from "@/actions";
 import { useFormState, useFormStatus } from "react-dom";
