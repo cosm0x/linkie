@@ -1,18 +1,27 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import { ISuperfluid, ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
+import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+
 //TODOS: add events
 contract Linkie {
+  using SuperTokenV1Library for ISuperToken;
+
   uint256 systemFee;
   address owner;
+  ISuperToken public usdtx; // SuperToken to be streamed
 
   struct Campaign {
     string id;
     address creator;
     address creative;
     uint256 milestoneCount;
-    uint256 paymentCount;
+    uint96 paymentCount;
     uint256 amount;
+    int96 baseFlowRate;
+    int96 currentFlowRate;
+    bool isStreaming;
     bool isCompleted;
   }
 
@@ -23,9 +32,10 @@ contract Linkie {
   mapping(string => Campaign) campaigns;
   mapping(address => Creative) public creatives;
 
-  constructor(uint256 _systemFee) {
+  constructor(uint256 _systemFee, ISuperToken _usdtx) {
     systemFee = _systemFee;
     owner = msg.sender;
+    usdtx = _usdtx; // Initialize the SuperToken
   }
 
   modifier onlyOwner() {
@@ -34,19 +44,24 @@ contract Linkie {
   }
 
   //this activates the campaign
-  function activateCampaign(
-    string calldata campaignId,
-    uint256 milestoneCount
+  function createCampaign(
+    string calldata _campaignId,
+    uint256 _milestoneCount,
+    uint256 _amount,
+    int96 _baseFlowRate
   ) external payable {
-    require(msg.value > 1000000000000000, "Least amount is 0.001 tBNB");
+    require(_amount > 0, "invalid amount");
     //saves the campaign on-chain
-    campaigns[campaignId] = Campaign({
-      id: campaignId,
+    campaigns[_campaignId] = Campaign({
+      id: _campaignId,
       creator: msg.sender,
       creative: address(0),
       amount: msg.value,
-      milestoneCount: milestoneCount,
+      milestoneCount: _milestoneCount,
       paymentCount: 0,
+      baseFlowRate: _baseFlowRate,
+      currentFlowRate: _baseFlowRate,
+      isStreaming: false,
       isCompleted: false
     });
   }
@@ -54,43 +69,44 @@ contract Linkie {
   //matches a creative to a campaign
   function matchCampaign(
     string calldata campaignId,
-    address creative
+    address _creative
   ) external {
     require(campaigns[campaignId].creator == msg.sender, "Not permitted");
-    campaigns[campaignId].creative = creative;
+    campaigns[campaignId].creative = _creative;
   }
 
-  //pays each milestone on creator/business approval
+  //pays each milestone on creator/business approval  with Superfluid streaming
   function payMilestone(string calldata campaignId) external {
-    Campaign memory campaign = campaigns[campaignId];
+    Campaign storage campaign = campaigns[campaignId];
 
-    require(campaigns[campaignId].creator == msg.sender, "Not permitted");
-
+    require(campaign.creator == msg.sender, "Not permitted");
     require(
       campaign.paymentCount < campaign.milestoneCount,
       "Payment already completed"
     );
 
-    uint256 creativeTotalPayment = campaign.amount -
-      ((systemFee * campaign.amount) / 100);
-
-    //transfers payment to creative wallet
-    (bool success, ) = payable(campaign.creative).call{
-      value: creativeTotalPayment / campaign.milestoneCount
-    }("");
-    require(success, "Transfer failed.");
-
-    //checks if it is the last payment
-    if (campaign.paymentCount + 1 == campaign.milestoneCount) {
-      //handle rating logic
-      creatives[campaign.creative].xp += 20;
-
-      //mark campaign as completed
-      campaigns[campaignId].isCompleted = true;
+    // If this is the first milestone, start the stream
+    if (!campaign.isStreaming) {
+      usdtx.createFlow(campaign.creative, campaign.baseFlowRate);
+      campaign.isStreaming = true;
+    } else {
+      // Increment the flow rate for the next milestone
+      int96 newFlowRate = campaign.baseFlowRate *
+        int96(campaign.paymentCount + 1);
+      usdtx.updateFlow(campaign.creative, newFlowRate);
+      campaign.currentFlowRate = newFlowRate;
     }
 
-    //update campaign record
-    campaigns[campaignId].paymentCount++;
+    // Increment the payment count and check for completion
+    campaign.paymentCount++;
+
+    if (campaign.paymentCount == campaign.milestoneCount) {
+      // Complete the campaign and stop the stream
+      usdtx.deleteFlow(address(this), campaign.creative);
+      creatives[campaign.creative].xp += 20;
+
+      campaign.isCompleted = true;
+    }
   }
 
   //for showing creative campaign payments
