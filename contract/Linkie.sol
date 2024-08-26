@@ -1,152 +1,125 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "interfaces/IERC20.sol";
-
+//TODOS: add events
 contract Linkie {
-  address public USDT;
+  uint256 systemFee;
+  address owner;
 
-  enum Status {
-    PENDING,
-    PAID,
-    COMPLETED,
-    CANCELLED
+  struct Campaign {
+    string id;
+    address creator;
+    address creative;
+    uint256 milestoneCount;
+    uint256 paymentCount;
+    uint256 amount;
+    bool isCompleted;
   }
 
-  struct Listing {
-    bytes32 id;
-    address seller;
-    address buyer;
-    uint256 rate;
-    uint quantity;
-    Status status;
+  struct Creative {
+    uint256 xp;
   }
 
-  mapping(bytes32 => mapping(address => Listing)) public listings;
+  mapping(string => Campaign) campaigns;
+  mapping(address => Creative) public creatives;
 
-  // Additional data structures to keep track of id keys
-  bytes32[] listingKeys;
-  mapping(address => bytes32[]) addressToListing;
-
-  event newListing(
-    bytes32 indexed id,
-    address indexed seller,
-    uint256 rate,
-    uint256 quantity
-  );
-
-  event ListingPaid(
-    bytes32 indexed id,
-    address indexed seller,
-    address indexed buyer,
-    uint amount,
-    uint quantity
-  );
-
-  constructor(address _USDT) {
-    USDT = _USDT;
+  constructor(uint256 _systemFee) {
+    systemFee = _systemFee;
+    owner = msg.sender;
   }
 
-  function addListing(bytes32 _id, uint _rate, uint _quantity) public {
-    // Store listing to user
-    listings[_id][msg.sender] = Listing({
-      id: _id,
-      seller: msg.sender,
-      buyer: address(0),
-      rate: _rate,
-      quantity: _quantity,
-      status: Status.PENDING
+  modifier onlyOwner() {
+    require(msg.sender == owner, "Only owner allowed");
+    _;
+  }
+
+  //this activates the campaign
+  function activateCampaign(
+    string calldata campaignId,
+    uint256 milestoneCount
+  ) external payable {
+    require(msg.value > 1000000000000000, "Least amount is 0.001 tBNB");
+    //saves the campaign on-chain
+    campaigns[campaignId] = Campaign({
+      id: campaignId,
+      creator: msg.sender,
+      creative: address(0),
+      amount: msg.value,
+      milestoneCount: milestoneCount,
+      paymentCount: 0,
+      isCompleted: false
     });
-
-    // If this is a new key, add it to the listingKeys array
-    bool isNewBytesKey = true;
-    for (uint256 i = 0; i < listingKeys.length; i++) {
-      if (listingKeys[i] == _id) {
-        isNewBytesKey = false;
-        break;
-      }
-    }
-    if (isNewBytesKey) {
-      listingKeys.push(_id);
-    }
-
-    // If this address has not been associated with this key, add the key
-    bool isNewAddressKey = true;
-    bytes32[] storage bytesKeys = addressToListing[msg.sender];
-    for (uint256 i = 0; i < bytesKeys.length; i++) {
-      if (bytesKeys[i] == _id) {
-        isNewAddressKey = false;
-        break;
-      }
-    }
-    if (isNewAddressKey) {
-      addressToListing[msg.sender].push(_id);
-    }
   }
 
-  function getListing(
-    bytes32 _id,
-    address _seller
-  ) public view returns (Listing memory) {
-    return listings[_id][_seller];
-  }
-
-  function getAllListingsForAddress(
-    address _seller
-  ) public view returns (Listing[] memory) {
-    bytes32[] storage bytesKeys = addressToListing[_seller];
-    Listing[] memory structs = new Listing[](bytesKeys.length);
-
-    for (uint256 i = 0; i < bytesKeys.length; i++) {
-      structs[i] = listings[bytesKeys[i]][_seller];
-    }
-
-    return structs;
-  }
-
-  function payForListing(
-    bytes32 _id,
-    address _seller,
-    uint _quantity,
-    uint _amount
+  //matches a creative to a campaign
+  function matchCampaign(
+    string calldata campaignId,
+    address creative
   ) external {
-    //retrieve the listing
-    Listing storage listing = listings[_id][_seller];
+    require(campaigns[campaignId].creator == msg.sender, "Not permitted");
+    campaigns[campaignId].creative = creative;
+  }
 
-    //calculate price
-    uint price = listing.rate * _quantity;
+  //pays each milestone on creator/business approval
+  function payMilestone(string calldata campaignId) external {
+    Campaign memory campaign = campaigns[campaignId];
+
+    require(campaigns[campaignId].creator == msg.sender, "Not permitted");
 
     require(
-      listing.status == Status.PENDING || listing.status == Status.PAID,
-      "Invalid listing"
+      campaign.paymentCount < campaign.milestoneCount,
+      "Payment already completed"
     );
-    require(_quantity <= listing.quantity, "Invalid quantity");
-    require(_amount >= price, "Invalid amount");
 
-    // calculate charge -
-    // note: Easypay only charges on rate, not on quantity for sellers cheaper experience 😊
-    uint charge = deductCharge(listing.rate);
+    uint256 creativeTotalPayment = campaign.amount -
+      ((systemFee * campaign.amount) / 100);
 
-    //transfer balance to seller after charge
-    IERC20(USDT).transferFrom(msg.sender, listing.seller, price - charge);
-    //deduct charge
-    IERC20(USDT).transferFrom(msg.sender, address(this), charge);
+    //transfers payment to creative wallet
+    (bool success, ) = payable(campaign.creative).call{
+      value: creativeTotalPayment / campaign.milestoneCount
+    }("");
+    require(success, "Transfer failed.");
 
-    listing.buyer = msg.sender;
-    listing.quantity -= _quantity;
+    //checks if it is the last payment
+    if (campaign.paymentCount + 1 == campaign.milestoneCount) {
+      //handle rating logic
+      creatives[campaign.creative].xp += 20;
 
-    if (listing.quantity == 0) {
-      listing.status = Status.COMPLETED;
-    } else {
-      listing.status = Status.PAID;
+      //mark campaign as completed
+      campaigns[campaignId].isCompleted = true;
     }
 
-    emit ListingPaid(_id, _seller, msg.sender, _amount, _quantity);
+    //update campaign record
+    campaigns[campaignId].paymentCount++;
   }
 
-  function deductCharge(uint256 _amount) internal pure returns (uint256) {
-    uint256 fee = _amount / 1000; // 0.1%
+  //for showing creative campaign payments
+  function getCreativeTotalPayment(
+    string calldata campaignId
+  ) external view returns (uint256) {
+    Campaign memory campaign = campaigns[campaignId];
+    return campaign.amount - ((systemFee * campaign.amount) / 100);
+  }
 
-    return fee;
+  //get creative ratings
+  function getCreativeRating(
+    address _creative
+  ) external view returns (uint256) {
+    return creatives[_creative].xp;
+  }
+
+  function getSystemFee() external view returns (uint256) {
+    return systemFee;
+  }
+
+  function getCampaign(
+    string calldata campaignId
+  ) external view returns (Campaign memory) {
+    return campaigns[campaignId];
+  }
+
+  //to be deleted. Used for recovering testing funds
+  function withdraw(address _recipient) public payable {
+    payable(_recipient).transfer(address(this).balance);
   }
 }
