@@ -62,7 +62,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
 
   const copyLink = () => {
     navigator.clipboard
-      .writeText(`http://localhost:3000/p/${params?.id}`)
+      .writeText(`https://lnkie.vercel.app/p/${params?.id}`)
       .then(() => {
         toast({
           description: "Listing link copied",
