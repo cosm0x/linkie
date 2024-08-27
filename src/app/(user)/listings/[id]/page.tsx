@@ -62,7 +62,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
 
   const copyLink = () => {
     navigator.clipboard
-      .writeText(`https://esypay.vercel.app/p/${params?.id}`)
+      .writeText(`http://localhost:3000/p/${params?.id}`)
       .then(() => {
         toast({
           description: "Listing link copied",
@@ -102,7 +102,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <a
-                    href={`https://testnet.bscscan.com/tx/${tx}`}
+                    href={`https://testnet.opbnbscan.com/tx/${tx}`}
                     target="_blank"
                   >
                     View Txn{" "}

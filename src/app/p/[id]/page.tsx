@@ -232,7 +232,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
           {hash && (
             <small>
               <a
-                href={`https://testnet.bscscan.com/tx/${hash}`}
+                href={`https://testnet.opbnbscan.com/tx/${hash}`}
                 target="_blank"
               >
                 View Txn{" "}
