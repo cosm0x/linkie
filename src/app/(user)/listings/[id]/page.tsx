@@ -102,7 +102,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <a
-                    href={`https://optimism-sepolia.blockscout.com/tx/${tx}`}
+                    href={`https://testnet.bscscan.com/tx/${tx}`}
                     target="_blank"
                   >
                     View Txn{" "}
