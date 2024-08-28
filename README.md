@@ -28,12 +28,24 @@ Linkie lets users create listings, share links, and receive USDT payments direct
 
 - **Approach**: Associate listings with wallet addresses, facilitate payments via smart contract on opBNB(testnet) blockchain for speed and cheap fees!
 
-## Future Plans (v2)
+## Road Map (v0.0.1)
 
-- Add sponsored gas for managing listings with smart accounts
+- Add sponsored gas for managing listings with smart accounts for better ux
 
 - Add optional email notification on received payments
 
 - Add Images and videos to listings
 
 - Add public listing page for verified businesses (Marketplace)
+
+## Previews
+
+![homepage](https://lnkie.vercel.app/img/1.png)
+
+![dashboard](https://lnkie.vercel.app/img/2.png)
+
+![create_listing](https://lnkie.vercel.app/img/3.png)
+
+![view_listing](https://lnkie.vercel.app/img/5.png)
+
+![payment_page](https://lnkie.vercel.app/img/6.png)
