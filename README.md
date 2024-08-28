@@ -8,11 +8,17 @@ Users in web3 can share long wallet addresses to receive payments. This is prone
 
 ## Solution
 
-Linkie lets users create listings, share links, and receive USDT payments directly to their wallet. It's great for small businesses, donations, and community contributions.
+Linkie lets users create listings, share links, and receive USDT payments directly to their wallet. It's great for small businesses, donations, and community contributions. Linkie has the benefits of:
+
+- Eliminating error with long wallet addresses
+- Enables cross border payments
+- Inventory management
 
 ## Demo & Transaction
 
 - [Live Dapp](https://lnkie.vercel.app)
+
+- [Demo Video](https://youtu.be/mJLYnIHhI_c)
 
 - [Verified Smart Contract (opBNB Testnet scan)](https://testnet.opbnbscan.com/address/0xD25089333116D489873D2ecae0A18DBC0253401d?tab=Contract&p=1)
 
