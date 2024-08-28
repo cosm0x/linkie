@@ -357,7 +357,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
         <small className="text-muted-foreground">
           This payment link was generated with{" "}
           <a href="/" className="font-medium">
-            EasyPay
+            Linkie
           </a>
         </small>
       </div>

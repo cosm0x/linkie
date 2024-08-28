@@ -16,9 +16,9 @@ Linkie lets users create listings, share links, and receive USDT payments direct
 
 - [Verified Smart Contract (opBNB Testnet scan)](https://testnet.opbnbscan.com/address/0xD25089333116D489873D2ecae0A18DBC0253401d?tab=Contract&p=1)
 
-- [Create Listing Transaction on Demo Video (opBNB Testnet scan)](https://testnet.opbnbscan.com/tx/0x478d6339ccca6f4b3fe310d98e000de211165e38a045709efcfcb6e57ed1b0a0)
+- [Create Listing Transaction on Demo Video (opBNB Testnet scan)](https://testnet.opbnbscan.com/tx/0x0c85528cc78c8eb42236ec42cf3e5fedfbd4052e58cb5a727fe8c31985cbd946)
 
-- [Pay Listing Transaction on Demo Video (opBNB Testnet scan) ](https://testnet.opbnbscan.com/tx/0x282528738b653467d9d354bc3c47966b4173594ce8f2dce6e84a54a4203db7d0)
+- [Pay Listing Transaction on Demo Video (opBNB Testnet scan) ](https://testnet.opbnbscan.com/tx/0xa9db250c2f092d1905625e12ec6ac911f30ec1463bab508e53ecc8685a7f72ff)
 
 ## Tech Stack
 
